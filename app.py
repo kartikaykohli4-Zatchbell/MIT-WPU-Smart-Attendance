@@ -8,6 +8,9 @@ import base64
 from datetime import datetime
 import qrcode
 
+from cryptography.hazmat.primitives import serialization, hashes
+from cryptography.hazmat.primitives.asymmetric import padding
+
 app = Flask(__name__)
 
 # ---------------------------------------------------------
@@ -18,7 +21,7 @@ app.secret_key = "mitwpu-smart-attendance-demo-secret"
 
 # Your laptop's Wi-Fi IPv4 address
 # Change this if your IP address changes.
-NETWORK_IP = "10.70.60.146"
+NETWORK_IP = "10.148.246.146"
 
 PORT = 5000
 
@@ -172,7 +175,6 @@ def create_session():
             "message": "Please select subject, division and lecture."
         }), 400
 
-    # Remove expired sessions
     current_time = time.time()
 
     expired_sessions = [
@@ -184,7 +186,6 @@ def create_session():
     for sid in expired_sessions:
         del active_sessions[sid]
 
-    # Generate unique session ID
     session_id = (
         "MITWPU-"
         + str(int(time.time()))
@@ -194,6 +195,7 @@ def create_session():
 
     created_at = time.time()
     expires_at = created_at + QR_VALIDITY
+    challenge = secrets.token_urlsafe(32)
 
     active_sessions[session_id] = {
         "session_id": session_id,
@@ -201,21 +203,15 @@ def create_session():
         "division": division,
         "lecture": lecture,
         "created_at": created_at,
-        "expires_at": expires_at
+        "expires_at": expires_at,
+        "challenge": challenge,
+        "challenge_started_at": created_at
     }
-
-    # -----------------------------------------------------
-    # QR LINK
-    # -----------------------------------------------------
 
     attendance_url = (
         f"http://{NETWORK_IP}:{PORT}"
         f"/attendance/{session_id}"
     )
-
-    # -----------------------------------------------------
-    # GENERATE QR IMAGE USING PYTHON
-    # -----------------------------------------------------
 
     qr = qrcode.QRCode(
         version=1,
@@ -233,12 +229,7 @@ def create_session():
     )
 
     image_buffer = io.BytesIO()
-
-    qr_image.save(
-        image_buffer,
-        format="PNG"
-    )
-
+    qr_image.save(image_buffer, format="PNG")
     image_buffer.seek(0)
 
     qr_base64 = base64.b64encode(
@@ -247,7 +238,6 @@ def create_session():
 
     return jsonify({
         "success": True,
-
         "session": {
             "session_id": session_id,
             "subject": subject,
@@ -256,12 +246,8 @@ def create_session():
             "created_at": created_at,
             "expires_at": expires_at
         },
-
         "attendance_url": attendance_url,
-
-        "qr_image":
-            "data:image/png;base64,"
-            + qr_base64
+        "qr_image": "data:image/png;base64," + qr_base64
     })
 
 
@@ -283,21 +269,141 @@ def get_session(session_id):
     current_time = time.time()
 
     if current_time > session_data["expires_at"]:
-
         del active_sessions[session_id]
-
         return jsonify({
             "success": False,
             "message": "This QR code has expired."
         }), 410
 
+    public_session = {
+        "session_id": session_data["session_id"],
+        "subject": session_data["subject"],
+        "division": session_data["division"],
+        "lecture": session_data["lecture"],
+        "created_at": session_data["created_at"],
+        "expires_at": session_data["expires_at"]
+    }
+
     return jsonify({
         "success": True,
-        "session": session_data,
-        "remaining_seconds":
-            int(session_data["expires_at"] - current_time)
+        "session": public_session,
+        "remaining_seconds": int(session_data["expires_at"] - current_time)
     })
 
+
+# ---------------------------------------------------------
+# GET CURRENT SHORT-LIVED CHALLENGE
+# ---------------------------------------------------------
+
+CHALLENGE_VALIDITY = 30
+
+
+@app.route("/api/session/<session_id>/challenge", methods=["GET"])
+def get_challenge(session_id):
+
+    session_data = active_sessions.get(session_id)
+
+    if not session_data:
+        return jsonify({
+            "success": False,
+            "message": "Invalid or expired session."
+        }), 404
+
+    current_time = time.time()
+
+    if current_time > session_data["expires_at"]:
+        del active_sessions[session_id]
+        return jsonify({
+            "success": False,
+            "message": "Attendance session has expired."
+        }), 410
+
+    challenge_age = current_time - session_data["challenge_started_at"]
+
+    if challenge_age >= CHALLENGE_VALIDITY:
+        session_data["challenge"] = secrets.token_urlsafe(32)
+        session_data["challenge_started_at"] = current_time
+
+    return jsonify({
+        "success": True,
+        "challenge": session_data["challenge"],
+        "expires_in": int(
+            CHALLENGE_VALIDITY
+            - (current_time - session_data["challenge_started_at"])
+        )
+    })
+
+
+# ---------------------------------------------------------
+# STUDENT PUBLIC KEY REGISTRATION
+# ---------------------------------------------------------
+
+@app.route("/api/register-device", methods=["POST"])
+def register_device():
+
+    data = request.get_json(silent=True) or {}
+
+    roll = str(data.get("roll", "")).strip()
+    password = data.get("password", "").strip()
+    public_key = data.get("public_key", "").strip()
+
+    if not roll or not password or not public_key:
+        return jsonify({
+            "success": False,
+            "message": "Roll number, password and public key are required."
+        }), 400
+
+    database = load_data()
+
+    student = next(
+        (
+            student
+            for student in database.get("students", [])
+            if str(student.get("roll")) == roll
+        ),
+        None
+    )
+
+    if not student:
+        return jsonify({
+            "success": False,
+            "message": "Student not found."
+        }), 404
+
+    if student.get("password") != password:
+        return jsonify({
+            "success": False,
+            "message": "Incorrect password."
+        }), 401
+
+    # Do not silently replace an existing registered key.
+    if student.get("public_key"):
+        return jsonify({
+            "success": False,
+            "message": "This student already has a registered device."
+        }), 409
+
+    try:
+        # Validate that the received key is actually a valid public key.
+        serialization.load_pem_public_key(
+            public_key.encode("utf-8")
+        )
+
+    except Exception:
+        return jsonify({
+            "success": False,
+            "message": "Invalid public key."
+        }), 400
+
+    student["public_key"] = public_key
+
+    save_data(database)
+
+    return jsonify({
+        "success": True,
+        "message": "Device registered successfully.",
+        "roll": roll
+    })
 
 # ---------------------------------------------------------
 # STUDENT MARK ATTENDANCE
