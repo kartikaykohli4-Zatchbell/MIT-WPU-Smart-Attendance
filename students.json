@@ -1,0 +1,169 @@
+{
+    "faculty": [
+        {
+            "id": "FAC001",
+            "name": "Dr. Priya Sharma",
+            "password": "faculty123"
+        }
+    ],
+    "students": [
+        {
+            "roll": "101",
+            "name": "Kartikay Kohli",
+            "division": "A",
+            "password": "student123"
+        },
+        {
+            "roll": "102",
+            "name": "Aarav Mehta",
+            "division": "A",
+            "password": "student123"
+        },
+        {
+            "roll": "103",
+            "name": "Riya Shah",
+            "division": "A",
+            "password": "student123"
+        },
+        {
+            "roll": "104",
+            "name": "Aditya Patil",
+            "division": "A",
+            "password": "student123"
+        },
+        {
+            "roll": "105",
+            "name": "Ananya Deshmukh",
+            "division": "A",
+            "password": "student123"
+        },
+        {
+            "roll": "106",
+            "name": "Rahul Joshi",
+            "division": "A",
+            "password": "student123"
+        },
+        {
+            "roll": "107",
+            "name": "Sneha Kulkarni",
+            "division": "A",
+            "password": "student123"
+        },
+        {
+            "roll": "108",
+            "name": "Vedant More",
+            "division": "A",
+            "password": "student123"
+        },
+        {
+            "roll": "109",
+            "name": "Ishita Jain",
+            "division": "A",
+            "password": "student123"
+        },
+        {
+            "roll": "110",
+            "name": "Omkar Shinde",
+            "division": "A",
+            "password": "student123"
+        },
+        {
+            "roll": "201",
+            "name": "Kartikay Sharma",
+            "division": "B",
+            "password": "student123"
+        },
+        {
+            "roll": "202",
+            "name": "Arjun Mehta",
+            "division": "B",
+            "password": "student123"
+        },
+        {
+            "roll": "203",
+            "name": "Neha Shah",
+            "division": "B",
+            "password": "student123"
+        },
+        {
+            "roll": "204",
+            "name": "Rohan Patil",
+            "division": "B",
+            "password": "student123"
+        },
+        {
+            "roll": "205",
+            "name": "Ananya Joshi",
+            "division": "B",
+            "password": "student123"
+        },
+        {
+            "roll": "206",
+            "name": "Vivek Kulkarni",
+            "division": "B",
+            "password": "student123"
+        },
+        {
+            "roll": "207",
+            "name": "Pooja Deshmukh",
+            "division": "B",
+            "password": "student123"
+        },
+        {
+            "roll": "208",
+            "name": "Aditya More",
+            "division": "B",
+            "password": "student123"
+        },
+        {
+            "roll": "209",
+            "name": "Isha Jain",
+            "division": "B",
+            "password": "student123"
+        },
+        {
+            "roll": "210",
+            "name": "Kunal Shinde",
+            "division": "B",
+            "password": "student123"
+        }
+    ],
+    "attendance": [
+        {
+            "session_id": "MITWPU-1790324385-7EA0C1",
+            "roll": "101",
+            "name": "Kartikay Kohli",
+            "division": "A",
+            "subject": "Database Management System",
+            "lecture": "Lecture 3",
+            "timestamp": "2026-09-25T13:51:14"
+        },
+        {
+            "session_id": "MITWPU-1790325157-ABFFA7",
+            "roll": "202",
+            "name": "Arjun Mehta",
+            "division": "B",
+            "subject": "Operating System Concepts",
+            "lecture": "Lecture 2",
+            "timestamp": "2026-09-25T14:03:10"
+        },
+        {
+            "session_id": "MITWPU-1790356582-BB449B",
+            "roll": "107",
+            "name": "Sneha Kulkarni",
+            "division": "A",
+            "subject": "Operating System Concepts",
+            "lecture": "Lecture 1",
+            "timestamp": "2026-09-25T22:48:03"
+        },
+        {
+            "session_id": "MITWPU-1790402083-7448FE",
+            "roll": "103",
+            "name": "Riya Shah",
+            "division": "A",
+            "subject": "Database Management System",
+            "lecture": "Lecture 2",
+            "timestamp": "2026-09-26T11:25:42"
+        }
+    ]
+}

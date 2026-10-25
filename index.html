@@ -1,0 +1,1487 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+
+    <meta charset="UTF-8">
+
+    <meta name="viewport"
+          content="width=device-width, initial-scale=1.0">
+
+    <title>MIT-WPU Smart Attendance System</title>
+
+    <link rel="stylesheet" href="/style.css">
+
+    <!-- Temporary styling to guarantee correct appearance -->
+    <style>
+
+        * {
+            box-sizing: border-box;
+        }
+
+        body {
+            margin: 0;
+            font-family: Arial, Helvetica, sans-serif;
+            background: #f4f6f9;
+            color: #1f2937;
+        }
+
+        /* ================= HEADER ================= */
+
+        .header {
+            background: white;
+            border-bottom: 1px solid #e5e7eb;
+            padding: 18px 40px;
+        }
+
+        .header-content {
+            max-width: 1250px;
+            margin: auto;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+        }
+
+        .brand {
+            display: flex;
+            align-items: center;
+            gap: 14px;
+        }
+
+        .logo {
+            width: 48px;
+            height: 48px;
+            border-radius: 10px;
+            background: #8b1e3f;
+            color: white;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            font-weight: bold;
+            font-size: 17px;
+        }
+
+        .brand h1 {
+            margin: 0;
+            color: #8b1e3f;
+            font-size: 24px;
+        }
+
+        .brand p {
+            margin: 4px 0 0;
+            color: #64748b;
+            font-size: 14px;
+        }
+
+        .system-status {
+            display: flex;
+            align-items: center;
+            gap: 8px;
+            color: #166534;
+            font-size: 14px;
+            font-weight: 600;
+        }
+
+        .status-dot {
+            width: 9px;
+            height: 9px;
+            background: #22c55e;
+            border-radius: 50%;
+        }
+
+        /* ================= MAIN ================= */
+
+        .main-container {
+            max-width: 1250px;
+            margin: auto;
+            padding: 55px 25px;
+            min-height: calc(100vh - 145px);
+        }
+
+        /* ================= LOGIN ================= */
+
+        .login-section {
+            display: flex;
+            justify-content: center;
+            align-items: center;
+        }
+
+        .login-card {
+            width: 100%;
+            max-width: 500px;
+            background: white;
+            padding: 42px;
+            border-radius: 18px;
+            border: 1px solid #e5e7eb;
+            box-shadow: 0 12px 35px rgba(0, 0, 0, 0.08);
+        }
+
+        .login-icon {
+            width: 58px;
+            height: 58px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            background: #fdf0f4;
+            border-radius: 14px;
+            font-size: 28px;
+            margin-bottom: 20px;
+        }
+
+        .login-card h2 {
+            margin: 0;
+            font-size: 30px;
+            color: #172033;
+        }
+
+        .subtitle {
+            margin: 10px 0 30px;
+            color: #64748b;
+            font-size: 15px;
+        }
+
+        /* ================= FORMS ================= */
+
+        .form-group {
+            margin-bottom: 20px;
+        }
+
+        .form-group label {
+            display: block;
+            margin-bottom: 8px;
+            color: #334155;
+            font-weight: 600;
+            font-size: 14px;
+        }
+
+        .form-group input,
+        .form-group select {
+            width: 100%;
+            height: 46px;
+            padding: 0 14px;
+            border: 1px solid #cbd5e1;
+            border-radius: 8px;
+            background: white;
+            color: #1e293b;
+            font-size: 15px;
+            outline: none;
+            transition: 0.2s;
+        }
+
+        .form-group input:focus,
+        .form-group select:focus {
+            border-color: #8b1e3f;
+            box-shadow: 0 0 0 3px rgba(139, 30, 63, 0.1);
+        }
+
+        /* ================= BUTTONS ================= */
+
+        .primary-button {
+            width: 100%;
+            height: 46px;
+            border: none;
+            border-radius: 8px;
+            background: #8b1e3f;
+            color: white;
+            font-size: 15px;
+            font-weight: 600;
+            cursor: pointer;
+            transition: 0.2s;
+        }
+
+        .primary-button:hover {
+            background: #701631;
+            transform: translateY(-1px);
+        }
+
+        .primary-button:disabled {
+            opacity: 0.6;
+            cursor: not-allowed;
+        }
+
+        .secondary-button {
+            border: 1px solid #cbd5e1;
+            background: white;
+            color: #334155;
+            padding: 10px 18px;
+            border-radius: 8px;
+            font-weight: 600;
+            cursor: pointer;
+        }
+
+        .secondary-button:hover {
+            background: #f8fafc;
+        }
+
+        /* ================= DEMO CREDENTIALS ================= */
+
+        .demo-credentials {
+            margin-top: 25px;
+            padding: 18px;
+            background: #f8fafc;
+            border: 1px solid #e2e8f0;
+            border-radius: 10px;
+            font-size: 14px;
+            color: #475569;
+        }
+
+        .demo-credentials strong {
+            display: block;
+            margin-bottom: 10px;
+            color: #334155;
+        }
+
+        .demo-credentials p {
+            margin: 7px 0;
+        }
+
+        /* ================= MESSAGES ================= */
+
+        .message {
+            margin-top: 15px;
+            padding: 12px;
+            border-radius: 8px;
+            font-size: 14px;
+            display: none;
+        }
+
+        .message.show {
+            display: block;
+        }
+
+        .message.success {
+            background: #ecfdf5;
+            color: #166534;
+            border: 1px solid #bbf7d0;
+        }
+
+        .message.error {
+            background: #fef2f2;
+            color: #991b1b;
+            border: 1px solid #fecaca;
+        }
+
+        /* ================= DASHBOARD ================= */
+
+        .hidden {
+            display: none !important;
+        }
+
+        .dashboard-header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-bottom: 30px;
+        }
+
+        .dashboard-header h2 {
+            margin: 0;
+            font-size: 28px;
+        }
+
+        .dashboard-header p {
+            margin-top: 6px;
+            color: #64748b;
+        }
+
+        .stats-grid {
+            display: grid;
+            grid-template-columns: repeat(4, 1fr);
+            gap: 18px;
+            margin-bottom: 25px;
+        }
+
+        .stat-card {
+            background: white;
+            padding: 22px;
+            border: 1px solid #e5e7eb;
+            border-radius: 14px;
+            display: flex;
+            align-items: center;
+            gap: 15px;
+        }
+
+        .stat-icon {
+            width: 48px;
+            height: 48px;
+            border-radius: 10px;
+            background: #fdf0f4;
+            color: #8b1e3f;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-weight: bold;
+            font-size: 20px;
+        }
+
+        .stat-label {
+            display: block;
+            font-size: 13px;
+            color: #64748b;
+            margin-bottom: 5px;
+        }
+
+        .stat-value {
+            font-size: 24px;
+            color: #172033;
+        }
+
+        /* ================= PANELS ================= */
+
+        .panel {
+            background: white;
+            border: 1px solid #e5e7eb;
+            border-radius: 14px;
+            padding: 28px;
+            margin-bottom: 25px;
+        }
+
+        .panel-header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-bottom: 25px;
+        }
+
+        .panel-header h3 {
+            margin: 0;
+            font-size: 20px;
+        }
+
+        .panel-header p {
+            margin: 7px 0 0;
+            color: #64748b;
+            font-size: 14px;
+        }
+
+        .form-grid {
+            display: grid;
+            grid-template-columns: repeat(3, 1fr);
+            gap: 18px;
+        }
+
+        .generate-button {
+            margin-top: 5px;
+            max-width: 260px;
+        }
+
+        /* ================= QR ================= */
+
+        .qr-panel {
+            text-align: center;
+        }
+
+        .qr-content {
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            gap: 60px;
+        }
+
+        .qr-image-container {
+            padding: 18px;
+            border: 1px solid #e2e8f0;
+            border-radius: 12px;
+            background: white;
+        }
+
+        .qr-image {
+            width: 260px;
+            height: 260px;
+            display: block;
+        }
+
+        .qr-information {
+            min-width: 260px;
+            text-align: left;
+        }
+
+        .session-detail {
+            margin-bottom: 16px;
+        }
+
+        .session-detail span {
+            display: block;
+            color: #64748b;
+            font-size: 13px;
+            margin-bottom: 4px;
+        }
+
+        .session-detail strong {
+            color: #172033;
+        }
+
+        .timer-box {
+            margin-top: 25px;
+            padding: 18px;
+            text-align: center;
+            border-radius: 10px;
+            background: #fff7ed;
+            border: 1px solid #fed7aa;
+        }
+
+        .timer-box span {
+            display: block;
+            color: #9a3412;
+            font-size: 13px;
+        }
+
+        .timer-box strong {
+            display: block;
+            margin-top: 5px;
+            color: #c2410c;
+            font-size: 30px;
+        }
+
+        .qr-note {
+            color: #64748b;
+            font-size: 13px;
+            line-height: 1.5;
+        }
+
+        /* ================= TABLE ================= */
+
+        .table-container {
+            overflow-x: auto;
+        }
+
+        table {
+            width: 100%;
+            border-collapse: collapse;
+        }
+
+        th,
+        td {
+            padding: 13px 12px;
+            text-align: left;
+            border-bottom: 1px solid #e5e7eb;
+            font-size: 14px;
+        }
+
+        th {
+            background: #f8fafc;
+            color: #475569;
+            font-weight: 600;
+        }
+
+        td {
+            color: #334155;
+        }
+
+        .empty-state {
+            text-align: center;
+            padding: 35px;
+            color: #94a3b8;
+        }
+
+        .live-indicator {
+            color: #16a34a;
+            font-size: 13px;
+            font-weight: bold;
+        }
+
+        /* ================= STUDENT PAGE ================= */
+
+        .attendance-section {
+            display: flex;
+            justify-content: center;
+        }
+
+        .attendance-card {
+            width: 100%;
+            max-width: 520px;
+            background: white;
+            padding: 35px;
+            border-radius: 18px;
+            border: 1px solid #e5e7eb;
+            box-shadow: 0 12px 35px rgba(0, 0, 0, 0.08);
+        }
+
+        .attendance-icon {
+            width: 55px;
+            height: 55px;
+            border-radius: 50%;
+            background: #ecfdf5;
+            color: #16a34a;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-size: 26px;
+            font-weight: bold;
+            margin-bottom: 18px;
+        }
+
+        .attendance-card h2 {
+            margin: 0;
+            font-size: 28px;
+        }
+
+        .session-info {
+            background: #f8fafc;
+            border: 1px solid #e2e8f0;
+            border-radius: 10px;
+            padding: 16px;
+            margin-bottom: 25px;
+        }
+
+        .session-info div {
+            display: flex;
+            justify-content: space-between;
+            padding: 8px 0;
+            border-bottom: 1px solid #e5e7eb;
+        }
+
+        .session-info div:last-child {
+            border-bottom: none;
+        }
+
+        .session-info span {
+            color: #64748b;
+            font-size: 13px;
+        }
+
+        .session-info strong {
+            color: #334155;
+            font-size: 13px;
+            text-align: right;
+        }
+
+        .active-status {
+            color: #16a34a !important;
+        }
+
+        /* ================= FOOTER ================= */
+
+        .footer {
+            background: white;
+            border-top: 1px solid #e5e7eb;
+            padding: 20px 40px;
+            display: flex;
+            justify-content: space-between;
+            color: #64748b;
+            font-size: 13px;
+        }
+
+        /* ================= MOBILE ================= */
+
+        @media (max-width: 800px) {
+
+            .header {
+                padding: 15px 20px;
+            }
+
+            .header-content {
+                flex-direction: column;
+                align-items: flex-start;
+                gap: 12px;
+            }
+
+            .main-container {
+                padding: 30px 15px;
+            }
+
+            .stats-grid {
+                grid-template-columns: repeat(2, 1fr);
+            }
+
+            .form-grid {
+                grid-template-columns: 1fr;
+            }
+
+            .qr-content {
+                flex-direction: column;
+                gap: 30px;
+            }
+
+            .qr-information {
+                width: 100%;
+            }
+
+            .footer {
+                flex-direction: column;
+                gap: 8px;
+                padding: 18px 20px;
+            }
+        }
+
+        @media (max-width: 500px) {
+
+            .login-card,
+            .attendance-card {
+                padding: 25px 20px;
+            }
+
+            .stats-grid {
+                grid-template-columns: 1fr;
+            }
+
+            .dashboard-header {
+                flex-direction: column;
+                align-items: flex-start;
+                gap: 15px;
+            }
+
+            .qr-image {
+                width: 220px;
+                height: 220px;
+            }
+
+        }
+
+    </style>
+
+</head>
+
+
+<body>
+
+
+<!-- =========================================================
+     HEADER
+========================================================= -->
+
+<header class="header">
+
+    <div class="header-content">
+
+        <div class="brand">
+
+            <div class="logo">
+                MIT
+            </div>
+
+            <div>
+
+                <h1>MIT-WPU</h1>
+
+                <p>
+                    Smart Attendance System
+                </p>
+
+            </div>
+
+        </div>
+
+
+        <div class="system-status">
+
+            <span class="status-dot"></span>
+
+            <span>
+                System Online
+            </span>
+
+        </div>
+
+    </div>
+
+</header>
+
+
+
+<!-- =========================================================
+     MAIN
+========================================================= -->
+
+<main class="main-container">
+
+
+    <!-- =====================================================
+         FACULTY LOGIN
+    ====================================================== -->
+
+    <section
+        id="facultyLogin"
+        class="login-section"
+    >
+
+        <div class="login-card">
+
+
+            <div class="login-icon">
+                👨‍🏫
+            </div>
+
+
+            <h2>
+                Faculty Login
+            </h2>
+
+
+            <p class="subtitle">
+                Login to generate attendance QR codes
+            </p>
+
+
+            <form id="facultyLoginForm">
+
+
+                <div class="form-group">
+
+                    <label for="facultyId">
+                        Faculty ID
+                    </label>
+
+                    <input
+                        type="text"
+                        id="facultyId"
+                        placeholder="Enter Faculty ID"
+                        autocomplete="username"
+                        required
+                    >
+
+                </div>
+
+
+                <div class="form-group">
+
+                    <label for="facultyPassword">
+                        Password
+                    </label>
+
+                    <input
+                        type="password"
+                        id="facultyPassword"
+                        placeholder="Enter Password"
+                        autocomplete="current-password"
+                        required
+                    >
+
+                </div>
+
+
+                <button
+                    type="submit"
+                    class="primary-button"
+                >
+                    Login
+                </button>
+
+
+            </form>
+
+
+            <div
+                id="loginMessage"
+                class="message"
+            ></div>
+
+
+            <div class="demo-credentials">
+
+                <strong>
+                    Demo Faculty Credentials
+                </strong>
+
+                <p>
+                    Faculty ID:
+                    <b>FAC001</b>
+                </p>
+
+                <p>
+                    Password:
+                    <b>faculty123</b>
+                </p>
+
+            </div>
+
+
+        </div>
+
+    </section>
+
+
+
+    <!-- =====================================================
+         FACULTY DASHBOARD
+    ====================================================== -->
+
+    <section
+        id="facultyDashboard"
+        class="dashboard-section hidden"
+    >
+
+
+        <div class="dashboard-header">
+
+            <div>
+
+                <h2>
+                    Faculty Dashboard
+                </h2>
+
+                <p id="facultyWelcome">
+                    Welcome, Faculty
+                </p>
+
+            </div>
+
+
+            <button
+                id="logoutButton"
+                class="secondary-button"
+            >
+                Logout
+            </button>
+
+        </div>
+
+
+
+        <!-- STATISTICS -->
+
+        <div class="stats-grid">
+
+
+            <div class="stat-card">
+
+                <div class="stat-icon">
+                    👥
+                </div>
+
+                <div>
+
+                    <span class="stat-label">
+                        Total Students
+                    </span>
+
+                    <strong
+                        id="totalStudents"
+                        class="stat-value"
+                    >
+                        0
+                    </strong>
+
+                </div>
+
+            </div>
+
+
+            <div class="stat-card">
+
+                <div class="stat-icon">
+                    ✓
+                </div>
+
+                <div>
+
+                    <span class="stat-label">
+                        Present
+                    </span>
+
+                    <strong
+                        id="presentStudents"
+                        class="stat-value"
+                    >
+                        0
+                    </strong>
+
+                </div>
+
+            </div>
+
+
+            <div class="stat-card">
+
+                <div class="stat-icon">
+                    ✕
+                </div>
+
+                <div>
+
+                    <span class="stat-label">
+                        Absent
+                    </span>
+
+                    <strong
+                        id="absentStudents"
+                        class="stat-value"
+                    >
+                        0
+                    </strong>
+
+                </div>
+
+            </div>
+
+
+            <div class="stat-card">
+
+                <div class="stat-icon">
+                    %
+                </div>
+
+                <div>
+
+                    <span class="stat-label">
+                        Attendance
+                    </span>
+
+                    <strong
+                        id="attendancePercentage"
+                        class="stat-value"
+                    >
+                        0%
+                    </strong>
+
+                </div>
+
+            </div>
+
+
+        </div>
+
+
+
+        <!-- QR GENERATION -->
+
+        <div class="panel">
+
+
+            <div class="panel-header">
+
+                <div>
+
+                    <h3>
+                        Generate Attendance QR
+                    </h3>
+
+                    <p>
+                        Create a temporary QR code
+                        for the current lecture.
+                    </p>
+
+                </div>
+
+            </div>
+
+
+            <div class="form-grid">
+
+
+                <div class="form-group">
+
+                    <label for="subject">
+                        Subject
+                    </label>
+
+                    <select id="subject">
+
+                        <option value="">
+                            Select Subject
+                        </option>
+
+                        <option value="Database Management System">
+                            Database Management System
+                        </option>
+
+                        <option value="Operating System Concepts">
+                            Operating System Concepts
+                        </option>
+
+                        <option value="Data Communication and Networking">
+                            Data Communication and Networking
+                        </option>
+
+                        <option value="Web Technologies">
+                            Web Technologies
+                        </option>
+
+                        <option value="Object Oriented Programming">
+                            Object Oriented Programming
+                        </option>
+
+                        <option value="Python Programming">
+                            Python Programming
+                        </option>
+
+                    </select>
+
+                </div>
+
+
+                <div class="form-group">
+
+                    <label for="division">
+                        Division
+                    </label>
+
+                    <select id="division">
+
+                        <option value="">
+                            Select Division
+                        </option>
+
+                        <option value="A">
+                            Division A
+                        </option>
+
+                        <option value="B">
+                            Division B
+                        </option>
+
+                    </select>
+
+                </div>
+
+
+                <div class="form-group">
+
+                    <label for="lecture">
+                        Lecture
+                    </label>
+
+                    <select id="lecture">
+
+                        <option value="">
+                            Select Lecture
+                        </option>
+
+                        <option value="Lecture 1">
+                            Lecture 1
+                        </option>
+
+                        <option value="Lecture 2">
+                            Lecture 2
+                        </option>
+
+                        <option value="Lecture 3">
+                            Lecture 3
+                        </option>
+
+                        <option value="Lecture 4">
+                            Lecture 4
+                        </option>
+
+                        <option value="Lecture 5">
+                            Lecture 5
+                        </option>
+
+                    </select>
+
+                </div>
+
+
+            </div>
+
+
+            <button
+                id="generateQRButton"
+                class="primary-button generate-button"
+            >
+                Generate Dynamic QR
+            </button>
+
+
+            <div
+                id="facultyMessage"
+                class="message"
+            ></div>
+
+
+        </div>
+
+
+
+        <!-- QR DISPLAY -->
+
+        <div
+            id="qrPanel"
+            class="panel qr-panel hidden"
+        >
+
+            <div class="panel-header">
+
+                <div>
+
+                    <h3>
+                        Attendance QR Code
+                    </h3>
+
+                    <p>
+                        Students can scan this QR
+                        using their phone camera.
+                    </p>
+
+                </div>
+
+            </div>
+
+
+            <div class="qr-content">
+
+
+                <div class="qr-image-container">
+
+                    <img
+                        id="qrImage"
+                        class="qr-image"
+                        src=""
+                        alt="Attendance QR Code"
+                    >
+
+                </div>
+
+
+                <div class="qr-information">
+
+
+                    <div class="session-detail">
+
+                        <span>
+                            Subject
+                        </span>
+
+                        <strong id="qrSubject">
+                            -
+                        </strong>
+
+                    </div>
+
+
+                    <div class="session-detail">
+
+                        <span>
+                            Division
+                        </span>
+
+                        <strong id="qrDivision">
+                            -
+                        </strong>
+
+                    </div>
+
+
+                    <div class="session-detail">
+
+                        <span>
+                            Lecture
+                        </span>
+
+                        <strong id="qrLecture">
+                            -
+                        </strong>
+
+                    </div>
+
+
+                    <div class="timer-box">
+
+                        <span>
+                            QR expires in
+                        </span>
+
+                        <strong id="qrTimer">
+                            02:00
+                        </strong>
+
+                    </div>
+
+
+                    <p class="qr-note">
+                        Scan the QR code before
+                        the timer reaches zero.
+                    </p>
+
+
+                </div>
+
+
+            </div>
+
+        </div>
+
+
+
+        <!-- ATTENDANCE TABLE -->
+
+        <div class="panel">
+
+
+            <div class="panel-header">
+
+                <div>
+
+                    <h3>
+                        Live Attendance
+                    </h3>
+
+                    <p>
+                        Attendance updates automatically.
+                    </p>
+
+                </div>
+
+
+                <span
+                    id="liveIndicator"
+                    class="live-indicator"
+                >
+                    ● LIVE
+                </span>
+
+            </div>
+
+
+            <div class="table-container">
+
+                <table>
+
+                    <thead>
+
+                        <tr>
+
+                            <th>#</th>
+
+                            <th>
+                                Roll Number
+                            </th>
+
+                            <th>
+                                Student Name
+                            </th>
+
+                            <th>
+                                Division
+                            </th>
+
+                            <th>
+                                Subject
+                            </th>
+
+                            <th>
+                                Lecture
+                            </th>
+
+                            <th>
+                                Time
+                            </th>
+
+                        </tr>
+
+                    </thead>
+
+
+                    <tbody id="attendanceTableBody">
+
+                        <tr>
+
+                            <td
+                                colspan="7"
+                                class="empty-state"
+                            >
+                                Generate a QR code
+                                to start attendance.
+                            </td>
+
+                        </tr>
+
+                    </tbody>
+
+                </table>
+
+            </div>
+
+
+        </div>
+
+
+    </section>
+
+
+
+    <!-- =====================================================
+         STUDENT ATTENDANCE PAGE
+    ====================================================== -->
+
+    <section
+        id="studentAttendance"
+        class="attendance-section hidden"
+    >
+
+        <div class="attendance-card">
+
+
+            <div class="attendance-icon">
+                ✓
+            </div>
+
+
+            <h2>
+                Mark Attendance
+            </h2>
+
+
+            <p class="subtitle">
+                Enter your student credentials
+                to mark attendance.
+            </p>
+
+
+
+            <div class="session-info">
+
+
+                <div>
+
+                    <span>
+                        Subject
+                    </span>
+
+                    <strong id="studentSubject">
+                        Loading...
+                    </strong>
+
+                </div>
+
+
+                <div>
+
+                    <span>
+                        Division
+                    </span>
+
+                    <strong id="studentDivision">
+                        -
+                    </strong>
+
+                </div>
+
+
+                <div>
+
+                    <span>
+                        Lecture
+                    </span>
+
+                    <strong id="studentLecture">
+                        -
+                    </strong>
+
+                </div>
+
+
+                <div>
+
+                    <span>
+                        QR Status
+                    </span>
+
+                    <strong
+                        id="studentQRStatus"
+                        class="active-status"
+                    >
+                        Checking...
+                    </strong>
+
+                </div>
+
+
+            </div>
+
+
+
+            <form id="attendanceForm">
+
+
+                <div class="form-group">
+
+                    <label for="studentRoll">
+                        Roll Number
+                    </label>
+
+                    <input
+                        type="text"
+                        id="studentRoll"
+                        placeholder="Enter your roll number"
+                        required
+                    >
+
+                </div>
+
+
+                <div class="form-group">
+
+                    <label for="studentPassword">
+                        Password
+                    </label>
+
+                    <input
+                        type="password"
+                        id="studentPassword"
+                        placeholder="Enter your password"
+                        required
+                    >
+
+                </div>
+
+
+                <button
+                    type="submit"
+                    id="markAttendanceButton"
+                    class="primary-button"
+                >
+                    Mark Attendance
+                </button>
+
+
+            </form>
+
+
+            <div
+                id="attendanceMessage"
+                class="message"
+            ></div>
+
+
+            <div class="demo-credentials">
+
+                <strong>
+                    Demo Student
+                </strong>
+
+                <p>
+                    Roll Number:
+                    <b>101</b>
+                </p>
+
+                <p>
+                    Password:
+                    <b>student123</b>
+                </p>
+
+            </div>
+
+
+        </div>
+
+    </section>
+
+
+</main>
+
+
+
+<!-- =========================================================
+     FOOTER
+========================================================= -->
+
+<footer class="footer">
+
+    <p>
+        MIT-WPU Smart Attendance System
+    </p>
+
+    <p>
+        Dynamic QR Based Attendance Management
+    </p>
+
+</footer>
+
+
+
+<script src="/script.js"></script>
+
+</body>
+
+</html>
