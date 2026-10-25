@@ -1258,25 +1258,17 @@ function formatDateTime(timestamp) {
         return "-";
     }
 
-
     try {
 
-        const date =
-            new Date(timestamp);
+        const date = new Date(timestamp);
 
+        return date.toLocaleTimeString("en-IN", {
+            hour: "2-digit",
+            minute: "2-digit",
+            second: "2-digit"
+        });
 
-        return date.toLocaleTimeString(
-            "en-IN",
-            {
-                hour: "2-digit",
-                minute: "2-digit",
-                second: "2-digit"
-            }
-        );
-
-    }
-
-    catch (error) {
+    } catch (error) {
 
         return timestamp;
 
@@ -1291,24 +1283,274 @@ function formatDateTime(timestamp) {
 
 function escapeHTML(value) {
 
-    if (value === null ||
-        value === undefined) {
-
+    if (value === null || value === undefined) {
         return "";
-
     }
 
-
     return String(value)
-
         .replace(/&/g, "&amp;")
-
         .replace(/</g, "&lt;")
-
         .replace(/>/g, "&gt;")
-
         .replace(/"/g, "&quot;")
-
         .replace(/'/g, "&#039;");
 
+}
+
+
+// ============================================================
+// PHASE 2 - WEB CRYPTO DEVICE REGISTRATION
+// ============================================================
+
+const DEVICE_DB_NAME = "MIT-WPU-Smart-Attendance";
+const DEVICE_DB_VERSION = 1;
+const DEVICE_STORE_NAME = "deviceKeys";
+
+/*
+ * Open IndexedDB database.
+ */
+function openDeviceDatabase() {
+    return new Promise((resolve, reject) => {
+        const request = indexedDB.open(
+            DEVICE_DB_NAME,
+            DEVICE_DB_VERSION
+        );
+
+        request.onupgradeneeded = function (event) {
+            const db = event.target.result;
+
+            if (!db.objectStoreNames.contains(DEVICE_STORE_NAME)) {
+                db.createObjectStore(DEVICE_STORE_NAME);
+            }
+        };
+
+        request.onsuccess = function (event) {
+            resolve(event.target.result);
+        };
+
+        request.onerror = function () {
+            reject(request.error);
+        };
+    });
+}
+
+
+/*
+ * Save the private key in IndexedDB.
+ *
+ * The private key is generated as non-extractable,
+ * so JavaScript cannot export the actual private key material.
+ */
+async function savePrivateKey(privateKey, roll) {
+    const db = await openDeviceDatabase();
+
+    return new Promise((resolve, reject) => {
+        const transaction = db.transaction(
+            DEVICE_STORE_NAME,
+            "readwrite"
+        );
+
+        const store = transaction.objectStore(DEVICE_STORE_NAME);
+
+        const request = store.put(
+            privateKey,
+            "privateKey_" + roll
+        );
+
+        request.onsuccess = function () {
+            resolve();
+        };
+
+        request.onerror = function () {
+            reject(request.error);
+        };
+    });
+}
+
+
+/*
+ * Retrieve the student's private key from IndexedDB.
+ */
+async function getPrivateKey(roll) {
+    const db = await openDeviceDatabase();
+
+    return new Promise((resolve, reject) => {
+        const transaction = db.transaction(
+            DEVICE_STORE_NAME,
+            "readonly"
+        );
+
+        const store = transaction.objectStore(DEVICE_STORE_NAME);
+
+        const request = store.get("privateKey_" + roll);
+
+        request.onsuccess = function () {
+            resolve(request.result || null);
+        };
+
+        request.onerror = function () {
+            reject(request.error);
+        };
+    });
+}
+
+
+/*
+ * Generate an RSA-PSS key pair for this device.
+ *
+ * The private key is deliberately non-extractable.
+ */
+async function generateDeviceKeyPair() {
+    return await window.crypto.subtle.generateKey(
+        {
+            name: "RSA-PSS",
+            modulusLength: 2048,
+            publicExponent: new Uint8Array([1, 0, 1]),
+            hash: "SHA-256"
+        },
+        false,
+        ["sign", "verify"]
+    );
+}
+
+
+/*
+ * Convert an ArrayBuffer into Base64.
+ *
+ * The public key will be sent to Flask as Base64.
+ */
+function arrayBufferToBase64(buffer) {
+    const bytes = new Uint8Array(buffer);
+    let binary = "";
+
+    for (let i = 0; i < bytes.byteLength; i++) {
+        binary += String.fromCharCode(bytes[i]);
+    }
+
+    return btoa(binary);
+}
+
+
+/*
+ * Export only the PUBLIC key.
+ *
+ * The private key is never exported.
+ */
+async function exportPublicKey(publicKey) {
+    const publicKeyBuffer =
+        await window.crypto.subtle.exportKey(
+            "spki",
+            publicKey
+        );
+
+    const bytes =
+        new Uint8Array(publicKeyBuffer);
+
+    let binary = "";
+
+    for (let i = 0; i < bytes.byteLength; i++) {
+        binary += String.fromCharCode(bytes[i]);
+    }
+
+    const base64 =
+        btoa(binary);
+
+    const lines =
+        base64.match(/.{1,64}/g) || [];
+
+    return (
+        "-----BEGIN PUBLIC KEY-----\n" +
+        lines.join("\n") +
+        "\n-----END PUBLIC KEY-----"
+    );
+}
+
+
+/*
+ * Create and register a cryptographic device.
+ *
+ * This function:
+ *
+ * 1. Generates RSA-PSS key pair
+ * 2. Keeps private key inside browser
+ * 3. Stores private key in IndexedDB
+ * 4. Exports ONLY the public key
+ * 5. Sends public key to Flask
+ */
+async function registerCryptographicDevice(roll, password) {
+
+    try {
+
+        console.log("Starting cryptographic device registration...");
+
+        // Check whether this browser already has a key.
+        const existingKey = await getPrivateKey(roll);
+
+        if (existingKey) {
+            console.log(
+                "A cryptographic key already exists for roll:",
+                roll
+            );
+
+            return {
+                success: true,
+                alreadyRegistered: true
+            };
+        }
+
+        // Generate a new RSA-PSS key pair.
+        const keyPair = await generateDeviceKeyPair();
+
+        console.log("RSA-PSS key pair generated.");
+
+        // Save PRIVATE key locally.
+        await savePrivateKey(keyPair.privateKey, roll);
+
+        console.log("Private key stored in IndexedDB.");
+
+        // Export ONLY the public key.
+        const publicKeyBase64 = await exportPublicKey(keyPair.publicKey);
+
+        console.log("Public key exported.");
+
+        // Send public key to Flask.
+        const response = await fetch("/api/register-device", {
+            method: "POST",
+            headers: {
+                "Content-Type": "application/json"
+            },
+            body: JSON.stringify({
+                roll: roll,
+                password: password,
+                public_key: publicKeyBase64
+            })
+        });
+
+        const result = await response.json();
+
+        if (!response.ok) {
+            console.error("Device registration failed:", result);
+
+            return {
+                success: false,
+                message: result.message || "Device registration failed."
+            };
+        }
+
+        console.log("Device registration successful.");
+
+        return {
+            success: true,
+            alreadyRegistered: false,
+            message: result.message || "Device registered successfully."
+        };
+
+    } catch (error) {
+
+        console.error("Cryptographic device registration error:", error);
+
+        return {
+            success: false,
+            message: "Could not register this device."
+        };
+    }
 }
