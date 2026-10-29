@@ -148,7 +148,8 @@ async function handleFacultyLogin(event) {
 
         const data = await response.json();
 
-
+        console.log("Faculty login response:", data);
+        
         if (!response.ok || !data.success) {
 
             showMessage(
@@ -806,6 +807,24 @@ async function initializeStudentPage(sessionId) {
 
     }
 
+
+    // Register cryptographic device
+
+    const registerDeviceButton =
+        document.getElementById(
+            "registerDeviceButton"
+        );
+
+
+    if (registerDeviceButton) {
+
+        registerDeviceButton.addEventListener(
+            "click",
+            handleDeviceRegistration
+        );
+
+    }
+
 }
 
 
@@ -1009,47 +1028,47 @@ function startStudentCountdown(expiresAt) {
 
 }
 
+async function signAttendanceMessage(
+    privateKey,
+    message
+) {
+    const encoder = new TextEncoder();
+    const data = encoder.encode(message);
+
+    const signatureBuffer = await window.crypto.subtle.sign(
+        {
+            name: "RSA-PSS",
+            saltLength: 32
+        },
+        privateKey,
+        data
+    );
+
+    return arrayBufferToBase64(signatureBuffer);
+}
+
 
 // ============================================================
 // STUDENT ATTENDANCE SUBMISSION
 // ============================================================
 
-async function handleStudentAttendance(
-    event,
-    sessionId
-) {
-
+async function handleStudentAttendance(event, sessionId) {
     event.preventDefault();
 
+    const roll = document
+        .getElementById("studentRoll")
+        .value
+        .trim();
 
-    const roll =
-        document
-            .getElementById("studentRoll")
-            .value
-            .trim();
+    const password = document
+        .getElementById("studentPassword")
+        .value
+        .trim();
 
-
-    const password =
-        document
-            .getElementById("studentPassword")
-            .value
-            .trim();
-
-
-    const message =
-        document.getElementById(
-            "attendanceMessage"
-        );
-
-
-    const button =
-        document.getElementById(
-            "markAttendanceButton"
-        );
-
+    const message = document.getElementById("attendanceMessage");
+    const button = document.getElementById("markAttendanceButton");
 
     if (!roll || !password) {
-
         showMessage(
             message,
             "Please enter roll number and password.",
@@ -1059,129 +1078,102 @@ async function handleStudentAttendance(
         return;
     }
 
+    const privateKey = await getPrivateKey(roll);
 
-    button.disabled = true;
-
-    button.textContent =
-        "Verifying...";
-
-
-    try {
-
-        const response = await fetch(
-
-            "/api/attendance/"
-            + sessionId,
-
-            {
-
-                method: "POST",
-
-                headers: {
-                    "Content-Type":
-                        "application/json"
-                },
-
-                body: JSON.stringify({
-
-                    roll: roll,
-                    password: password
-
-                })
-
-            }
-
+    if (!privateKey) {
+        showMessage(
+            message,
+            "No registered device found. Please register this device first.",
+            "error"
         );
 
+        return;
+    }
 
-        const data =
-            await response.json();
+    button.disabled = true;
+    button.textContent = "Verifying...";
 
+    try {
+        const challengeResponse = await fetch(
+            "/api/session/" + sessionId + "/challenge"
+        );
 
-        if (!response.ok || !data.success) {
+        const challengeData = await challengeResponse.json();
 
+        if (!challengeResponse.ok || !challengeData.success) {
             showMessage(
                 message,
-                data.message ||
-                "Attendance could not be marked.",
+                challengeData.message || "Unable to get security challenge.",
                 "error"
             );
 
             return;
         }
 
-
-        // SUCCESS
-
-        showMessage(
-
-            message,
-
-            "Attendance marked successfully! " +
-            "Welcome, " +
-            data.student.name,
-
-            "success"
-
+        const challenge = challengeData.challenge;
+        const signedMessage = sessionId + "|" + roll + "|" + challenge;
+        const signature = await signAttendanceMessage(
+            privateKey,
+            signedMessage
         );
 
-
-        // Disable form after successful attendance
-
-        document
-            .getElementById("studentRoll")
-            .disabled = true;
-
-
-        document
-            .getElementById("studentPassword")
-            .disabled = true;
-
-
-        button.disabled = true;
-
-        button.textContent =
-            "Attendance Marked ✓";
-
-
-    }
-
-    catch (error) {
-
-        console.error(
-            "Attendance submission error:",
-            error
+        const response = await fetch(
+            "/api/attendance/" + sessionId,
+            {
+                method: "POST",
+                headers: {
+                    "Content-Type": "application/json"
+                },
+                body: JSON.stringify({
+                    roll: roll,
+                    password: password,
+                    challenge: challenge,
+                    signature: signature
+                })
+            }
         );
 
+        const data = await response.json();
 
-        showMessage(
+        if (!response.ok || !data.success) {
+            showMessage(
+                message,
+                data.message || "Attendance could not be marked.",
+                "error"
+            );
 
-            message,
-
-            "Unable to connect to server.",
-
-            "error"
-
-        );
-
-    }
-
-    finally {
-
-        if (!button.disabled) {
-
-            button.textContent =
-                "Mark Attendance";
-
+            return;
         }
 
+        // SUCCESS
+        showMessage(
+            message,
+            "Attendance marked successfully! Welcome, " + data.student.name,
+            "success"
+        );
+
+        // Disable form after successful attendance
+        document.getElementById("studentRoll").disabled = true;
+        document.getElementById("studentPassword").disabled = true;
+
+        button.disabled = true;
+        button.textContent = "Attendance Marked ✓";
+
+    } catch (error) {
+        console.error("Attendance submission error:", error);
+
+        showMessage(
+            message,
+            "Unable to connect to server.",
+            "error"
+        );
+    } finally {
+        if (!button.disabled) {
+            button.textContent = "Mark Attendance";
+        }
     }
 
 }
-
-
-// ============================================================
-// DISABLE ATTENDANCE FORM
 // ============================================================
 
 function disableAttendanceForm() {
@@ -1462,6 +1454,67 @@ async function exportPublicKey(publicKey) {
         lines.join("\n") +
         "\n-----END PUBLIC KEY-----"
     );
+}
+
+async function handleDeviceRegistration() {
+
+    const roll =
+        document
+            .getElementById("studentRoll")
+            .value
+            .trim();
+
+    const password =
+        document
+            .getElementById("studentPassword")
+            .value
+            .trim();
+
+    const message =
+        document.getElementById(
+            "attendanceMessage"
+        );
+
+
+    if (!roll || !password) {
+
+        showMessage(
+            message,
+            "Please enter roll number and password first.",
+            "error"
+        );
+
+        return;
+    }
+
+
+    const result =
+        await registerCryptographicDevice(
+            roll,
+            password
+        );
+
+
+    if (result.success) {
+
+        showMessage(
+            message,
+            result.message ||
+            "This device has been registered successfully.",
+            "success"
+        );
+
+    } else {
+
+        showMessage(
+            message,
+            result.message ||
+            "Could not register this device.",
+            "error"
+        );
+
+    }
+
 }
 
 

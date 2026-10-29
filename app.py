@@ -68,6 +68,41 @@ def save_data(data):
 
 
 # ---------------------------------------------------------
+# DIGITAL SIGNATURE VERIFICATION
+# ---------------------------------------------------------
+
+def verify_student_signature(
+    public_key_pem,
+    message,
+    signature_base64
+):
+    try:
+        public_key = serialization.load_pem_public_key(
+            public_key_pem.encode("utf-8")
+        )
+
+        signature = base64.b64decode(
+            signature_base64
+        )
+
+        public_key.verify(
+            signature,
+            message.encode("utf-8"),
+            padding.PSS(
+                mgf=padding.MGF1(
+                    hashes.SHA256()
+                ),
+                salt_length=32
+            ),
+            hashes.SHA256()
+        )
+
+        return True
+
+    except Exception:
+        return False
+
+# ---------------------------------------------------------
 # BASIC PAGE ROUTES
 # ---------------------------------------------------------
 
@@ -443,6 +478,8 @@ def mark_attendance(session_id):
 
     roll = data.get("roll", "").strip()
     password = data.get("password", "").strip()
+    signature = data.get("signature", "").strip()
+    challenge = data.get("challenge", "").strip()
 
     if not roll or not password:
         return jsonify({
@@ -474,6 +511,7 @@ def mark_attendance(session_id):
             "message": "Student not found."
         }), 401
 
+
     # -----------------------------------------------------
     # CHECK PASSWORD
     # -----------------------------------------------------
@@ -486,10 +524,59 @@ def mark_attendance(session_id):
         }), 401
 
     # -----------------------------------------------------
+    # CHECK DIGITAL SIGNATURE
+    # -----------------------------------------------------
+
+    if not signature or not challenge:
+
+        return jsonify({
+            "success": False,
+            "message": "Digital signature and challenge are required."
+        }), 400
+    # The challenge must match the current session challenge.
+    if challenge != session_data.get("challenge"):
+
+        return jsonify({
+            "success": False,
+            "message": "Invalid or expired security challenge."
+        }), 401
+
+    public_key = student.get("public_key")
+
+    if not public_key:
+
+        return jsonify({
+            "success": False,
+            "message": "No registered device found for this student."
+        }), 403
+
+    signed_message = (
+        session_id
+        + "|"
+        + roll
+        + "|"
+        + challenge
+    )
+
+    signature_valid = verify_student_signature(
+        public_key,
+        signed_message,
+        signature
+    )
+
+    if not signature_valid:
+
+        return jsonify({
+            "success": False,
+            "message": "Invalid device signature."
+        }), 401
+
+    # -----------------------------------------------------
     # CHECK DIVISION
     # -----------------------------------------------------
 
     if student.get("division") != session_data["division"]:
+
 
         return jsonify({
             "success": False,
